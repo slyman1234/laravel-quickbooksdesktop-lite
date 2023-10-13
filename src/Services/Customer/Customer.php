@@ -17,7 +17,7 @@ class Customer
 	{
 		// Do something here to load data using your model
 
-        $customer = DB::table('customers')->where('id', $ID)->first();      
+        $customer = DB::table('users')->where('id', $ID)->first();      
 		// Build the qbXML request from $data
 		$xml = '<?xml version="1.0" encoding="utf-8"?>
 		<?qbxml version="'.$version.'"?>

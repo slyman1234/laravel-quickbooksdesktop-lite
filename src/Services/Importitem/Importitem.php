@@ -100,7 +100,14 @@ class Importitem
 		$Queue->enqueue(QUICKBOOKS_IMPORT_ITEM, null,0, array( 'iteratorID' => $idents['iteratorID'] ), $user);
 	}
 	
-	// Import all of the records
+
+
+	  // Perform a category query to retrieve category information
+	//   $categoryQueryXML = '<QBXML>...'; // Construct the XML query for categories
+	//   $categoryResponseXML = self::sendQueryToQuickBooks($categoryQueryXML); // Use 'self::' to call the function
+	//   $categories = self::parseCategoryResponse($categoryResponseXML); // Use 'self::' to call the function
+  
+	  // Import all of the records
 	$errnum = 0;
 	$errmsg = '';
 	$Parser = new \QuickBooks_XML_Parser($xml);
@@ -119,18 +126,17 @@ class Importitem
 				'listidentity' => $Item->getChildDataAt($ret . ' ListID'),
 				'created_at' => $Item->getChildDataAt($ret . ' TimeCreated'),
 				'updated_at' => $Item->getChildDataAt($ret . ' TimeModified'),
-				'name' => $Item->getChildDataAt($ret . ' Name'),
-				'identifier' => mt_rand(),
-				'specification' => $Item->getChildDataAt($ret . ' specification'),
-				'quantity' =>  $Item->getChildDataAt($ret . ' QuantityOnHand')
-
+				'itemname' => $Item->getChildDataAt($ret . ' Name'),
+				// 'identifier' => mt_rand(),
+				// 'specification' => $Item->getChildDataAt($ret . ' specification'),
+				'itemcount' =>  $Item->getChildDataAt($ret . ' QuantityOnHand')
+                 
 				);
 			
 			$look_for = array(
-				'discount_amount' => array( 'SalesOrPurchase Price', 'SalesAndPurchase SalesPrice', 'SalesPrice' ),
-				'brief_info' => array( 'SalesOrPurchase Desc', 'SalesAndPurchase SalesDesc', 'SalesDesc' ),
-				
-			
+				'itemprice' => array( 'SalesOrPurchase Price', 'SalesAndPurchase SalesPrice', 'SalesPrice' ),
+				'itemdescription' => array( 'SalesOrPurchase Desc', 'SalesAndPurchase SalesDesc', 'SalesDesc' ),
+
 			); 
 
 
@@ -148,7 +154,7 @@ class Importitem
 				}
 			}
 			
-			\QuickBooks_Utilities::log($dsn, 'Importing ' . $type . ' Item ' . $arr['name'] . ': ' . print_r($arr, true));
+			\QuickBooks_Utilities::log($dsn, 'Importing ' . $type . ' Item ' . $arr['itemname'] . ': ' . print_r($arr, true));
 			
 			foreach ($arr as $key => $value) {
 				$arr[$key] = $value;
@@ -156,15 +162,21 @@ class Importitem
 			
 
 			$listidentity = $arr['listidentity'];
-            $quantity = $arr['quantity'];
-			$discountamount = $arr['discount_amount'];
+            $quantity = $arr['itemcount'];
+			// $discountamount = $arr['discount_amount'];
 
+			  // Replace 'your_category_field' with the actual field where you store the category in your database
+		
+			  $category = $Item->getChildDataAt($ret . ' category');
+			//   $category = $this->fetchCategoryByListID($listidentity);
+			  // Extend your $arr array with the category
+			$arr['category'] = $category;
 			DB::table('products')->insertOrIgnore($arr);
 			
 			DB::table('products')
             ->where('listidentity', '=', $listidentity)
             ->update(
-			['quantity' => $quantity, 'discount_amount' => $discountamount]);
+			['itemcount' => $quantity]);
 
 			
 		//	Log::info(print_r(array($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $xml, $idents), true));
